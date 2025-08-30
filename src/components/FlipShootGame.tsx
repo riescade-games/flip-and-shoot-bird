@@ -45,8 +45,83 @@ const OBSTACLE_WIDTH = 60;
 const OBSTACLE_GAP = 200;
 const ENEMY_SIZE = 25;
 
+// SVG Components
+const BirdSVG = ({ x, y, size, velocity }: { x: number; y: number; size: number; velocity: number }) => {
+  const rotation = Math.max(-30, Math.min(30, velocity * 3));
+  
+  return (
+    <g transform={`translate(${x + size/2}, ${y + size/2}) rotate(${rotation})`}>
+      {/* Bird Body */}
+      <ellipse cx="0" cy="0" rx={size/2} ry={size/3} fill="url(#birdGradient)" stroke="#2d5a3d" strokeWidth="2"/>
+      
+      {/* Wing */}
+      <ellipse cx="-5" cy="-2" rx={size/3} ry={size/4} fill="#4ade80" opacity="0.8">
+        <animateTransform 
+          attributeName="transform" 
+          type="rotate" 
+          values="0;-15;0" 
+          dur="0.3s" 
+          repeatCount="indefinite"
+        />
+      </ellipse>
+      
+      {/* Eye */}
+      <circle cx={size/4} cy="-5" r="4" fill="white"/>
+      <circle cx={size/4 + 2} cy="-5" r="2" fill="black"/>
+      
+      {/* Beak */}
+      <polygon points={`${size/2},0 ${size/2 + 8},-3 ${size/2 + 8},3`} fill="#fbbf24"/>
+    </g>
+  );
+};
+
+const EnemySVG = ({ x, y, size, type }: { x: number; y: number; size: number; type: string }) => {
+  return (
+    <g transform={`translate(${x}, ${y})`}>
+      {/* Enemy Body */}
+      <circle cx={size/2} cy={size/2} r={size/2} fill="url(#enemyGradient)" stroke="#dc2626" strokeWidth="2">
+        <animateTransform 
+          attributeName="transform" 
+          type="rotate" 
+          values="0;360" 
+          dur="2s" 
+          repeatCount="indefinite"
+        />
+      </circle>
+      
+      {/* Spikes */}
+      <g>
+        <polygon points={`${size/2},0 ${size/2-5},${size/4} ${size/2+5},${size/4}`} fill="#dc2626"/>
+        <polygon points={`${size},${size/2} ${size-size/4},${size/2-5} ${size-size/4},${size/2+5}`} fill="#dc2626"/>
+        <polygon points={`${size/2},${size} ${size/2-5},${size-size/4} ${size/2+5},${size-size/4}`} fill="#dc2626"/>
+        <polygon points={`0,${size/2} ${size/4},${size/2-5} ${size/4},${size/2+5}`} fill="#dc2626"/>
+      </g>
+      
+      {/* Evil Eyes */}
+      <circle cx={size/2-6} cy={size/2-4} r="3" fill="#fef3c7"/>
+      <circle cx={size/2+6} cy={size/2-4} r="3" fill="#fef3c7"/>
+      <circle cx={size/2-6} cy={size/2-4} r="1.5" fill="#dc2626"/>
+      <circle cx={size/2+6} cy={size/2-4} r="1.5" fill="#dc2626"/>
+    </g>
+  );
+};
+
+const BulletSVG = ({ x, y, size }: { x: number; y: number; size: number }) => {
+  return (
+    <g transform={`translate(${x}, ${y})`}>
+      <circle cx={size/2} cy={size/2} r={size/2} fill="url(#bulletGradient)" opacity="0.9">
+        <animate attributeName="opacity" values="0.9;1;0.9" dur="0.5s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx={size/2} cy={size/2} r={size/4} fill="#fef3c7">
+        <animate attributeName="r" values={`${size/4};${size/3};${size/4}`} dur="0.3s" repeatCount="indefinite"/>
+      </circle>
+    </g>
+  );
+};
+
 export const FlipShootGame = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
   const gameLoopRef = useRef<NodeJS.Timeout>();
   const keysRef = useRef<Set<string>>(new Set());
   
@@ -87,14 +162,16 @@ export const FlipShootGame = () => {
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     keysRef.current.add(event.code);
+    event.preventDefault();
   }, []);
 
   const handleKeyUp = useCallback((event: KeyboardEvent) => {
     keysRef.current.delete(event.code);
+    event.preventDefault();
   }, []);
 
-  const handleClick = useCallback(() => {
-    if (!gameState.gameRunning) return;
+  const handleShoot = useCallback(() => {
+    if (!gameState.gameRunning || gameState.gameOver) return;
     
     setGameState(prev => ({
       ...prev,
@@ -105,37 +182,46 @@ export const FlipShootGame = () => {
         size: BULLET_SIZE
       }]
     }));
-  }, [gameState.gameRunning]);
+  }, [gameState.gameRunning, gameState.gameOver]);
+
+  const handleCanvasClick = useCallback((event: React.MouseEvent) => {
+    event.preventDefault();
+    handleShoot();
+  }, [handleShoot]);
 
   const checkCollisions = useCallback((state: GameState): GameState => {
     const { bird, bullets, enemies, obstacles } = state;
     let newEnemies = [...enemies];
     let newBullets = [...bullets];
     let newScore = state.score;
+    let gameOver = false;
 
     // Check bullet-enemy collisions
-    newBullets.forEach((bullet, bulletIndex) => {
-      newEnemies.forEach((enemy, enemyIndex) => {
-        const dx = bullet.x - enemy.x;
-        const dy = bullet.y - enemy.y;
+    for (let bulletIndex = newBullets.length - 1; bulletIndex >= 0; bulletIndex--) {
+      const bullet = newBullets[bulletIndex];
+      for (let enemyIndex = newEnemies.length - 1; enemyIndex >= 0; enemyIndex--) {
+        const enemy = newEnemies[enemyIndex];
+        const dx = (bullet.x + bullet.size/2) - (enemy.x + enemy.size/2);
+        const dy = (bullet.y + bullet.size/2) - (enemy.y + enemy.size/2);
         const distance = Math.sqrt(dx * dx + dy * dy);
         
-        if (distance < bullet.size + enemy.size) {
+        if (distance < (bullet.size/2 + enemy.size/2)) {
           newBullets.splice(bulletIndex, 1);
           newEnemies.splice(enemyIndex, 1);
           newScore += 10;
+          break;
         }
-      });
-    });
+      }
+    }
 
     // Check bird-enemy collisions
     newEnemies.forEach(enemy => {
-      const dx = bird.x - enemy.x;
-      const dy = bird.y - enemy.y;
+      const dx = (bird.x + bird.size/2) - (enemy.x + enemy.size/2);
+      const dy = (bird.y + bird.size/2) - (enemy.y + enemy.size/2);
       const distance = Math.sqrt(dx * dx + dy * dy);
       
-      if (distance < bird.size + enemy.size) {
-        return { ...state, gameOver: true, gameRunning: false };
+      if (distance < (bird.size/2 + enemy.size/2)) {
+        gameOver = true;
       }
     });
 
@@ -145,7 +231,7 @@ export const FlipShootGame = () => {
           bird.x < obstacle.x + obstacle.width) {
         if (bird.y < obstacle.topHeight || 
             bird.y + bird.size > obstacle.topHeight + obstacle.gap) {
-          return { ...state, gameOver: true, gameRunning: false };
+          gameOver = true;
         }
       }
     });
@@ -154,14 +240,16 @@ export const FlipShootGame = () => {
       ...state,
       bullets: newBullets,
       enemies: newEnemies,
-      score: newScore
+      score: newScore,
+      gameOver,
+      gameRunning: !gameOver
     };
   }, []);
 
   const updateGame = useCallback(() => {
-    if (!gameState.gameRunning) return;
-
     setGameState(prevState => {
+      if (!prevState.gameRunning) return prevState;
+      
       let newState = { ...prevState };
 
       // Handle input
@@ -286,7 +374,56 @@ export const FlipShootGame = () => {
       // Check collisions
       return checkCollisions(newState);
     });
-  }, [gameState.gameRunning, checkCollisions]);
+  }, [checkCollisions]);
+
+  const drawBackground = useCallback((ctx: CanvasRenderingContext2D) => {
+    // Sky gradient
+    const gradient = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
+    gradient.addColorStop(0, 'hsl(202, 100%, 85%)');
+    gradient.addColorStop(0.7, 'hsl(215, 85%, 75%)');
+    gradient.addColorStop(1, 'hsl(195, 75%, 70%)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+    // Clouds
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    for (let i = 0; i < 5; i++) {
+      const x = (i * 200 + (Date.now() / 50) % 1000) % (CANVAS_WIDTH + 100);
+      const y = 50 + i * 30;
+      ctx.beginPath();
+      ctx.arc(x, y, 20, 0, 2 * Math.PI);
+      ctx.arc(x + 25, y, 30, 0, 2 * Math.PI);
+      ctx.arc(x + 50, y, 20, 0, 2 * Math.PI);
+      ctx.fill();
+    }
+
+    // Ground
+    ctx.fillStyle = 'hsl(120, 50%, 30%)';
+    ctx.fillRect(0, CANVAS_HEIGHT - 40, CANVAS_WIDTH, 40);
+  }, []);
+
+  const drawObstacles = useCallback((ctx: CanvasRenderingContext2D, obstacles: GameState['obstacles']) => {
+    ctx.fillStyle = 'hsl(220, 15%, 25%)';
+    ctx.strokeStyle = 'hsl(220, 20%, 35%)';
+    ctx.lineWidth = 3;
+    
+    obstacles.forEach(obstacle => {
+      // Top obstacle
+      ctx.fillRect(obstacle.x, 0, obstacle.width, obstacle.topHeight);
+      ctx.strokeRect(obstacle.x, 0, obstacle.width, obstacle.topHeight);
+      
+      // Bottom obstacle
+      const bottomY = obstacle.topHeight + obstacle.gap;
+      ctx.fillRect(obstacle.x, bottomY, obstacle.width, CANVAS_HEIGHT - bottomY);
+      ctx.strokeRect(obstacle.x, bottomY, obstacle.width, CANVAS_HEIGHT - bottomY);
+      
+      // Caps
+      ctx.fillStyle = 'hsl(220, 20%, 35%)';
+      ctx.fillRect(obstacle.x - 5, obstacle.topHeight - 20, obstacle.width + 10, 20);
+      ctx.fillRect(obstacle.x - 5, bottomY, obstacle.width + 10, 20);
+      ctx.fillStyle = 'hsl(220, 15%, 25%)';
+    });
+  }, []);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -295,57 +432,36 @@ export const FlipShootGame = () => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Clear canvas with gradient background
-    const gradient = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
-    gradient.addColorStop(0, 'hsl(202, 100%, 85%)');
-    gradient.addColorStop(1, 'hsl(215, 85%, 75%)');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-    // Draw obstacles
-    ctx.fillStyle = 'hsl(220, 15%, 25%)';
-    gameState.obstacles.forEach(obstacle => {
-      // Top obstacle
-      ctx.fillRect(obstacle.x, 0, obstacle.width, obstacle.topHeight);
-      // Bottom obstacle
-      ctx.fillRect(obstacle.x, obstacle.topHeight + obstacle.gap, obstacle.width, 
-                   CANVAS_HEIGHT - obstacle.topHeight - obstacle.gap);
-    });
-
-    // Draw bird
-    ctx.fillStyle = 'hsl(120, 75%, 45%)';
-    ctx.beginPath();
-    ctx.arc(gameState.bird.x + gameState.bird.size / 2, 
-            gameState.bird.y + gameState.bird.size / 2, 
-            gameState.bird.size / 2, 0, 2 * Math.PI);
-    ctx.fill();
-
-    // Draw bullets
-    ctx.fillStyle = 'hsl(45, 95%, 55%)';
-    gameState.bullets.forEach(bullet => {
-      ctx.beginPath();
-      ctx.arc(bullet.x, bullet.y, bullet.size, 0, 2 * Math.PI);
-      ctx.fill();
-    });
-
-    // Draw enemies
-    ctx.fillStyle = 'hsl(0, 85%, 60%)';
-    gameState.enemies.forEach(enemy => {
-      ctx.beginPath();
-      ctx.arc(enemy.x, enemy.y, enemy.size, 0, 2 * Math.PI);
-      ctx.fill();
-    });
-  }, [gameState]);
+    drawBackground(ctx);
+    drawObstacles(ctx, gameState.obstacles);
+  }, [gameState.obstacles, drawBackground, drawObstacles]);
 
   useEffect(() => {
-    document.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('keyup', handleKeyUp);
+    const handleKeyDownGlobal = (event: KeyboardEvent) => {
+      if (event.code === 'Space' || event.code === 'Enter') {
+        event.preventDefault();
+        if (event.code === 'Enter') {
+          handleShoot();
+        }
+        handleKeyDown(event);
+      }
+    };
+
+    const handleKeyUpGlobal = (event: KeyboardEvent) => {
+      if (event.code === 'Space' || event.code === 'Enter') {
+        event.preventDefault();
+        handleKeyUp(event);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDownGlobal);
+    document.addEventListener('keyup', handleKeyUpGlobal);
     
     return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.removeEventListener('keyup', handleKeyUp);
+      document.removeEventListener('keydown', handleKeyDownGlobal);
+      document.removeEventListener('keyup', handleKeyUpGlobal);
     };
-  }, [handleKeyDown, handleKeyUp]);
+  }, [handleKeyDown, handleKeyUp, handleShoot]);
 
   useEffect(() => {
     if (gameState.gameRunning) {
@@ -370,17 +486,19 @@ export const FlipShootGame = () => {
     <div className="flex flex-col items-center gap-6 p-6 bg-gradient-sky min-h-screen">
       <div className="text-center">
         <h1 className="text-4xl font-bold text-foreground mb-2">
-          Flip & Shoot Bird
+          🚁 Flip & Shoot Bird 🎯
         </h1>
         <p className="text-muted-foreground">
-          Espaço para voar • Clique para atirar
+          <kbd className="px-2 py-1 bg-secondary rounded">ESPAÇO</kbd> para voar • 
+          <kbd className="px-2 py-1 bg-secondary rounded">CLIQUE</kbd> ou 
+          <kbd className="px-2 py-1 bg-secondary rounded">ENTER</kbd> para atirar
         </p>
       </div>
 
       <Card className="p-6 shadow-game">
         <div className="flex justify-between items-center mb-4">
           <div className="text-2xl font-bold text-game-gold">
-            Pontos: {gameState.score}
+            🏆 Pontos: {gameState.score}
           </div>
           <div className="flex gap-2">
             {!gameState.gameRunning && (
@@ -388,7 +506,7 @@ export const FlipShootGame = () => {
                 onClick={resetGame}
                 className="bg-game-success hover:bg-game-success/90"
               >
-                {gameState.gameOver ? 'Reiniciar' : 'Iniciar'}
+                {gameState.gameOver ? '🔄 Reiniciar' : '🚀 Iniciar'}
               </Button>
             )}
           </div>
@@ -399,30 +517,84 @@ export const FlipShootGame = () => {
             ref={canvasRef}
             width={CANVAS_WIDTH}
             height={CANVAS_HEIGHT}
-            onClick={handleClick}
-            className="border-2 border-border rounded-lg cursor-pointer"
+            onClick={handleCanvasClick}
+            className="border-2 border-border rounded-lg cursor-crosshair absolute"
           />
           
+          <svg
+            ref={svgRef}
+            width={CANVAS_WIDTH}
+            height={CANVAS_HEIGHT}
+            className="border-2 border-border rounded-lg cursor-crosshair pointer-events-none"
+            style={{ position: 'relative', zIndex: 10 }}
+          >
+            <defs>
+              <linearGradient id="birdGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="hsl(120, 75%, 55%)" />
+                <stop offset="100%" stopColor="hsl(120, 85%, 35%)" />
+              </linearGradient>
+              
+              <radialGradient id="enemyGradient" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="hsl(0, 85%, 70%)" />
+                <stop offset="100%" stopColor="hsl(0, 75%, 50%)" />
+              </radialGradient>
+              
+              <radialGradient id="bulletGradient" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="hsl(45, 95%, 65%)" />
+                <stop offset="100%" stopColor="hsl(40, 85%, 45%)" />
+              </radialGradient>
+            </defs>
+            
+            {/* Render Bird */}
+            <BirdSVG 
+              x={gameState.bird.x} 
+              y={gameState.bird.y} 
+              size={gameState.bird.size}
+              velocity={gameState.bird.velocity}
+            />
+            
+            {/* Render Bullets */}
+            {gameState.bullets.map((bullet, index) => (
+              <BulletSVG 
+                key={index}
+                x={bullet.x} 
+                y={bullet.y} 
+                size={bullet.size}
+              />
+            ))}
+            
+            {/* Render Enemies */}
+            {gameState.enemies.map((enemy, index) => (
+              <EnemySVG 
+                key={index}
+                x={enemy.x} 
+                y={enemy.y} 
+                size={enemy.size}
+                type={enemy.type}
+              />
+            ))}
+          </svg>
+          
           {gameState.gameOver && (
-            <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center z-20">
               <div className="text-center text-white">
-                <h2 className="text-3xl font-bold mb-2">Game Over!</h2>
-                <p className="text-xl mb-4">Pontuação Final: {gameState.score}</p>
+                <h2 className="text-3xl font-bold mb-2">💥 Game Over! 💥</h2>
+                <p className="text-xl mb-4">🏆 Pontuação Final: {gameState.score}</p>
                 <Button 
                   onClick={resetGame}
                   className="bg-game-success hover:bg-game-success/90"
                 >
-                  Jogar Novamente
+                  🔄 Jogar Novamente
                 </Button>
               </div>
             </div>
           )}
         </div>
         
-        <div className="mt-4 text-sm text-muted-foreground text-center">
-          <p>🎯 Atire nos inimigos vermelhos para ganhar pontos</p>
-          <p>🚀 Desvie dos obstáculos cinzas</p>
-          <p>🎮 Use ESPAÇO para voar e CLIQUE para atirar</p>
+        <div className="mt-4 text-sm text-muted-foreground text-center space-y-1">
+          <p>🎯 Atire nos inimigos vermelhos para ganhar pontos (+10)</p>
+          <p>🚀 Desvie dos obstáculos cinzas (+1 por obstáculo passado)</p>
+          <p>🎮 Controles: ESPAÇO = voar | CLIQUE/ENTER = atirar</p>
         </div>
       </Card>
     </div>
