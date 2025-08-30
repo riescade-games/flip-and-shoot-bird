@@ -61,7 +61,37 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Game Colors
+				game: {
+					sky: 'hsl(var(--game-sky))',
+					'sky-dark': 'hsl(var(--game-sky-dark))',
+					bird: 'hsl(var(--game-bird))',
+					'bird-accent': 'hsl(var(--game-bird-accent))',
+					enemy: 'hsl(var(--game-enemy))',
+					'enemy-dark': 'hsl(var(--game-enemy-dark))',
+					obstacle: 'hsl(var(--game-obstacle))',
+					'obstacle-light': 'hsl(var(--game-obstacle-light))',
+					gold: 'hsl(var(--game-gold))',
+					silver: 'hsl(var(--game-silver))',
+					success: 'hsl(var(--game-success))',
+					danger: 'hsl(var(--game-danger))'
 				}
+			},
+			backgroundImage: {
+				'gradient-sky': 'var(--gradient-sky)',
+				'gradient-bird': 'var(--gradient-bird)',
+				'gradient-enemy': 'var(--gradient-enemy)',
+				'gradient-gold': 'var(--gradient-gold)'
+			},
+			boxShadow: {
+				'game': 'var(--shadow-game)',
+				'bird': 'var(--shadow-bird)',
+				'enemy': 'var(--shadow-enemy)'
+			},
+			transitionDuration: {
+				'game': 'var(--transition-game)',
+				'bounce': 'var(--bounce-duration)'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

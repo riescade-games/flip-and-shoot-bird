@@ -2,41 +2,66 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* Game Design System - Flip & Shoot Bird
+All colors MUST be HSL for consistency.
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Sky and Background */
+    --game-sky: 202 100% 85%;
+    --game-sky-dark: 215 85% 75%;
+    --background: 202 100% 95%;
+    --foreground: 215 25% 15%;
 
+    /* Game Elements */
+    --game-bird: 120 75% 45%;
+    --game-bird-accent: 120 85% 35%;
+    --game-enemy: 0 85% 60%;
+    --game-enemy-dark: 0 75% 50%;
+    --game-obstacle: 220 15% 25%;
+    --game-obstacle-light: 220 20% 35%;
+    
+    /* UI Elements */
+    --game-gold: 45 95% 55%;
+    --game-silver: 220 15% 75%;
+    --game-success: 120 60% 50%;
+    --game-danger: 0 75% 55%;
+
+    /* Core UI */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
+    --card-foreground: 215 25% 15%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-
-    --radius: 0.5rem;
+    --popover-foreground: 215 25% 15%;
+    --primary: 215 85% 45%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 220 20% 95%;
+    --secondary-foreground: 215 25% 15%;
+    --muted: 220 15% 92%;
+    --muted-foreground: 215 15% 45%;
+    --accent: 202 100% 85%;
+    --accent-foreground: 215 25% 15%;
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 15% 85%;
+    --input: 220 15% 85%;
+    --ring: 215 85% 45%;
+    --radius: 0.75rem;
+    
+    /* Game Gradients */
+    --gradient-sky: linear-gradient(180deg, hsl(202 100% 85%), hsl(215 85% 75%));
+    --gradient-bird: linear-gradient(135deg, hsl(120 75% 45%), hsl(120 85% 35%));
+    --gradient-enemy: linear-gradient(135deg, hsl(0 85% 60%), hsl(0 75% 50%));
+    --gradient-gold: linear-gradient(135deg, hsl(45 95% 55%), hsl(40 85% 45%));
+    
+    /* Game Shadows */
+    --shadow-game: 0 4px 20px hsl(215 25% 15% / 0.15);
+    --shadow-bird: 0 2px 10px hsl(120 75% 45% / 0.3);
+    --shadow-enemy: 0 2px 10px hsl(0 85% 60% / 0.3);
+    
+    /* Animations */
+    --transition-game: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --bounce-duration: 0.5s;
 
     --sidebar-background: 0 0% 98%;
 
