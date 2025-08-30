@@ -76,32 +76,112 @@ const BirdSVG = ({ x, y, size, velocity }: { x: number; y: number; size: number;
 };
 
 const EnemySVG = ({ x, y, size, type }: { x: number; y: number; size: number; type: string }) => {
+  const enemyTypes = {
+    top: {
+      body: 'url(#enemyGradientRed)',
+      accent: '#ef4444',
+      shape: 'spike'
+    },
+    bottom: {
+      body: 'url(#enemyGradientPurple)',
+      accent: '#a855f7',
+      shape: 'tentacle'
+    },
+    left: {
+      body: 'url(#enemyGradientOrange)',
+      accent: '#f97316',
+      shape: 'crystal'
+    },
+    right: {
+      body: 'url(#enemyGradientBlue)',
+      accent: '#3b82f6',
+      shape: 'plasma'
+    }
+  };
+
+  const enemy = enemyTypes[type as keyof typeof enemyTypes] || enemyTypes.top;
+  
   return (
     <g transform={`translate(${x}, ${y})`}>
-      {/* Enemy Body */}
-      <circle cx={size/2} cy={size/2} r={size/2} fill="url(#enemyGradient)" stroke="#dc2626" strokeWidth="2">
-        <animateTransform 
-          attributeName="transform" 
-          type="rotate" 
-          values="0;360" 
-          dur="2s" 
-          repeatCount="indefinite"
-        />
+      {/* Main Body - Smooth and elegant */}
+      <circle cx={size/2} cy={size/2} r={size/2 - 2} fill={enemy.body} stroke={enemy.accent} strokeWidth="1.5" opacity="0.9">
+        <animate attributeName="r" values={`${size/2 - 2};${size/2};${size/2 - 2}`} dur="2s" repeatCount="indefinite"/>
       </circle>
       
-      {/* Spikes */}
-      <g>
-        <polygon points={`${size/2},0 ${size/2-5},${size/4} ${size/2+5},${size/4}`} fill="#dc2626"/>
-        <polygon points={`${size},${size/2} ${size-size/4},${size/2-5} ${size-size/4},${size/2+5}`} fill="#dc2626"/>
-        <polygon points={`${size/2},${size} ${size/2-5},${size-size/4} ${size/2+5},${size-size/4}`} fill="#dc2626"/>
-        <polygon points={`0,${size/2} ${size/4},${size/2-5} ${size/4},${size/2+5}`} fill="#dc2626"/>
-      </g>
+      {/* Inner glow */}
+      <circle cx={size/2} cy={size/2} r={size/3} fill={enemy.accent} opacity="0.3">
+        <animate attributeName="opacity" values="0.3;0.6;0.3" dur="1.5s" repeatCount="indefinite"/>
+      </circle>
       
-      {/* Evil Eyes */}
-      <circle cx={size/2-6} cy={size/2-4} r="3" fill="#fef3c7"/>
-      <circle cx={size/2+6} cy={size/2-4} r="3" fill="#fef3c7"/>
-      <circle cx={size/2-6} cy={size/2-4} r="1.5" fill="#dc2626"/>
-      <circle cx={size/2+6} cy={size/2-4} r="1.5" fill="#dc2626"/>
+      {/* Type-specific decorations */}
+      {enemy.shape === 'spike' && (
+        <g opacity="0.8">
+          {/* Top spikes */}
+          <polygon points={`${size/2},2 ${size/2-4},${size/3} ${size/2+4},${size/3}`} fill={enemy.accent}>
+            <animateTransform attributeName="transform" type="rotate" values="0;360" dur="3s" repeatCount="indefinite" transformOrigin={`${size/2} ${size/2}`}/>
+          </polygon>
+          <polygon points={`${size-2},${size/2} ${size-size/3},${size/2-4} ${size-size/3},${size/2+4}`} fill={enemy.accent}>
+            <animateTransform attributeName="transform" type="rotate" values="0;360" dur="3s" repeatCount="indefinite" transformOrigin={`${size/2} ${size/2}`}/>
+          </polygon>
+          <polygon points={`${size/2},${size-2} ${size/2-4},${size-size/3} ${size/2+4},${size-size/3}`} fill={enemy.accent}>
+            <animateTransform attributeName="transform" type="rotate" values="0;360" dur="3s" repeatCount="indefinite" transformOrigin={`${size/2} ${size/2}`}/>
+          </polygon>
+          <polygon points={`2,${size/2} ${size/3},${size/2-4} ${size/3},${size/2+4}`} fill={enemy.accent}>
+            <animateTransform attributeName="transform" type="rotate" values="0;360" dur="3s" repeatCount="indefinite" transformOrigin={`${size/2} ${size/2}`}/>
+          </polygon>
+        </g>
+      )}
+      
+      {enemy.shape === 'tentacle' && (
+        <g opacity="0.7">
+          {/* Flowing tentacles */}
+          <path d={`M${size/2},${size/2} Q${size/2-8},${size/2-8} ${size/2-12},${size/2+6}`} stroke={enemy.accent} strokeWidth="3" fill="none">
+            <animate attributeName="d" values={`M${size/2},${size/2} Q${size/2-8},${size/2-8} ${size/2-12},${size/2+6};M${size/2},${size/2} Q${size/2-6},${size/2-10} ${size/2-10},${size/2+8};M${size/2},${size/2} Q${size/2-8},${size/2-8} ${size/2-12},${size/2+6}`} dur="2s" repeatCount="indefinite"/>
+          </path>
+          <path d={`M${size/2},${size/2} Q${size/2+8},${size/2-8} ${size/2+12},${size/2+6}`} stroke={enemy.accent} strokeWidth="3" fill="none">
+            <animate attributeName="d" values={`M${size/2},${size/2} Q${size/2+8},${size/2-8} ${size/2+12},${size/2+6};M${size/2},${size/2} Q${size/2+6},${size/2-10} ${size/2+10},${size/2+8};M${size/2},${size/2} Q${size/2+8},${size/2-8} ${size/2+12},${size/2+6}`} dur="2s" repeatCount="indefinite"/>
+          </path>
+        </g>
+      )}
+      
+      {enemy.shape === 'crystal' && (
+        <g opacity="0.8">
+          {/* Crystal facets */}
+          <polygon points={`${size/2},${size/4} ${size/4},${size/2} ${size/2},${3*size/4} ${3*size/4},${size/2}`} fill={enemy.accent} opacity="0.4">
+            <animateTransform attributeName="transform" type="rotate" values="0;180;0" dur="4s" repeatCount="indefinite" transformOrigin={`${size/2} ${size/2}`}/>
+          </polygon>
+          <polygon points={`${size/2-6},${size/2-6} ${size/2+6},${size/2-6} ${size/2},${size/2+6}`} fill={enemy.accent} opacity="0.6">
+            <animateTransform attributeName="transform" type="rotate" values="0;-180;0" dur="4s" repeatCount="indefinite" transformOrigin={`${size/2} ${size/2}`}/>
+          </polygon>
+        </g>
+      )}
+      
+      {enemy.shape === 'plasma' && (
+        <g opacity="0.7">
+          {/* Plasma energy */}
+          <circle cx={size/2-6} cy={size/2-6} r="3" fill={enemy.accent} opacity="0.8">
+            <animate attributeName="cx" values={`${size/2-6};${size/2+6};${size/2-6}`} dur="1.5s" repeatCount="indefinite"/>
+            <animate attributeName="cy" values={`${size/2-6};${size/2+6};${size/2-6}`} dur="2s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx={size/2+6} cy={size/2+6} r="2" fill={enemy.accent} opacity="0.6">
+            <animate attributeName="cx" values={`${size/2+6};${size/2-6};${size/2+6}`} dur="2s" repeatCount="indefinite"/>
+            <animate attributeName="cy" values={`${size/2+6};${size/2-6};${size/2+6}`} dur="1.8s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx={size/2} cy={size/2-8} r="2.5" fill={enemy.accent} opacity="0.7">
+            <animate attributeName="cy" values={`${size/2-8};${size/2+8};${size/2-8}`} dur="1.2s" repeatCount="indefinite"/>
+          </circle>
+        </g>
+      )}
+      
+      {/* Elegant eyes */}
+      <circle cx={size/2-4} cy={size/2-3} r="2.5" fill="white" opacity="0.9"/>
+      <circle cx={size/2+4} cy={size/2-3} r="2.5" fill="white" opacity="0.9"/>
+      <circle cx={size/2-4} cy={size/2-3} r="1.2" fill={enemy.accent}>
+        <animate attributeName="r" values="1.2;0.8;1.2" dur="3s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx={size/2+4} cy={size/2-3} r="1.2" fill={enemy.accent}>
+        <animate attributeName="r" values="1.2;0.8;1.2" dur="3s" repeatCount="indefinite"/>
+      </circle>
     </g>
   );
 };
@@ -534,9 +614,25 @@ export const FlipShootGame = () => {
                 <stop offset="100%" stopColor="hsl(120, 85%, 35%)" />
               </linearGradient>
               
-              <radialGradient id="enemyGradient" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="hsl(0, 85%, 70%)" />
-                <stop offset="100%" stopColor="hsl(0, 75%, 50%)" />
+              {/* Enemy Gradients for Different Types */}
+              <radialGradient id="enemyGradientRed" cx="50%" cy="30%" r="70%">
+                <stop offset="0%" stopColor="hsl(0, 85%, 75%)" />
+                <stop offset="100%" stopColor="hsl(0, 75%, 45%)" />
+              </radialGradient>
+              
+              <radialGradient id="enemyGradientPurple" cx="50%" cy="30%" r="70%">
+                <stop offset="0%" stopColor="hsl(280, 85%, 75%)" />
+                <stop offset="100%" stopColor="hsl(280, 75%, 45%)" />
+              </radialGradient>
+              
+              <radialGradient id="enemyGradientOrange" cx="50%" cy="30%" r="70%">
+                <stop offset="0%" stopColor="hsl(25, 95%, 75%)" />
+                <stop offset="100%" stopColor="hsl(25, 85%, 45%)" />
+              </radialGradient>
+              
+              <radialGradient id="enemyGradientBlue" cx="50%" cy="30%" r="70%">
+                <stop offset="0%" stopColor="hsl(220, 85%, 75%)" />
+                <stop offset="100%" stopColor="hsl(220, 75%, 45%)" />
               </radialGradient>
               
               <radialGradient id="bulletGradient" cx="50%" cy="50%" r="50%">
